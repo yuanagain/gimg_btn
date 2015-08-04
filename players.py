@@ -144,10 +144,11 @@ class Organization(object):
     def print_confidence(self):
         """Prints summary of analyst confidence """
         print "Confidences for analysts are as follows:"
-        print "============================"
+
         for name in self.analysts:
             analyst = self.analysts[name]
             print analyst.name + ": " + str(analyst.confidence)
+        print "============================"
 
     def reset_confidence(self):
         """Establishes equality for all analyst confidences """
