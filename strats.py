@@ -4,6 +4,7 @@ import numpy as np
 from pyalgotrade.barfeed import yahoofeed
 from pyalgotrade.tools import yahoofinance
 from time import gmtime, strftime
+import datetime
 
 from players import Analyst, Organization
 
@@ -55,35 +56,48 @@ class OrgStrat(strategy.BacktestingStrategy):
         self.setUseAdjustedValues(True)
         self.update = update
         self.first_pass = True
+        print "CONSTRUCTED"
 
     def onBars(self, bars):
-        if first_pass:
+        if self.first_pass:
+            self.first_pass = False
+            print "FIRST PASS"
             return
-        weights = self.organization.get_weights()
+        
         if self.update == "geometric":
             self.geometric_update()
+        
+        weights = self.organization.get_weights()
         broker = self.getBroker()
 
         for instr in weights:
             price = bars[instr].getClose()
             notion = int(1000000 * weights[instr] / price)
             current_holdings = broker.getShares(instr)
-
             order = notion - current_holdings
             self.marketOrder(instr, order)
 
-    def geometric_update(self, bar):
+    def geometric_update(self):
         """Updates confidence in each analyst based on performance at the last epoch """
         # learning factor
         gamma = 0.5
-
+        time_delta = time_delta(day = -1)
+        feed = self.getFeed()
         for analyst in self.organization.analysts:
             # evalute analyst performance in last epoch
-            print 1
+            bars_now = getCurrentBars()
+            bars_past = []
+            feed = self.getFeed()
+            for instr in feed.getRegisteredInstruments():
+                bars_past.append(feed.getLastBar(instr))
+            print 2
             # adjust confidence in analyst
+        self.organization.normalize_confidence()
 
-def eval_analyst_performance(analyst, bar, bar):
+def eval_analyst_performance(analyst, bar_now, bar_past):
     """Evaluates analyst's performance in a given interval"""
+    return 1
+    
 
 
 def main(plot):

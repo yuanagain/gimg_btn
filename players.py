@@ -162,10 +162,21 @@ class Organization(object):
         if (self.cumul_confidence == 0.0 and len(self.analysts) > 0):
             print "WARNING: ZERO cumulative confidence"
             return
+        self.update_cumul_confidence()
         for name in self.analysts:
             analyst = self.analysts[name]
             analyst.confidence /= self.cumul_confidence
         self.cumul_confidence = 1.0
+        
+    def update_cumul_confidence(self):
+        """Recomputes cumul_confidence for use in normalization"""
+        if (self.cumul_confidence == 0.0 and len(self.analysts) > 0):
+            print "WARNING: ZERO cumulative confidence"
+            return
+        self.cumul_confidence = 0.0
+        for name in self.analysts:
+            analyst = self.analysts[name]
+            self.cumul_confidence += analyst.confidence
 
     def get_weights(self):
         """Updates weights and returns organization's weightings"""
