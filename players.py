@@ -39,6 +39,12 @@ class Analyst(object):
         self.weights[instrument] = weight  
         if len(self.weights) == 1: 
             self.weights[instrument] = 1.0
+
+    def get_instruments(self):
+        instruments = []
+        for key in self.weights:
+            instruments.append(key)
+        return instruments
             
     def status(self):
         """Returns status of analyst """

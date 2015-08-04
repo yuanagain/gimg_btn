@@ -13,10 +13,10 @@ from pyalgotrade.technical import vwap
 from pyalgotrade.stratanalyzer import sharpe
 
 
-class HoldStrat(strategy.BacktestingStrategy):
-    def __init__(self, feed, instruments, analyst):
+class HoldStratA(strategy.BacktestingStrategy):
+    def __init__(self, feed, analyst):
         strategy.BacktestingStrategy.__init__(self, feed)
-        self.instruments = instruments
+        self.instruments = analyst.get_instruments()
         self.first_pass = True
         self.analyst = analyst
         self.setUseAdjustedValues(True)
@@ -30,7 +30,7 @@ class HoldStrat(strategy.BacktestingStrategy):
             self.marketOrder(instr, quantity)
         self.first_pass = False
 
-class OrgStrat(strategy.BacktestingStrategy):
+class HoldStratB(strategy.BacktestingStrategy):
     def __init__(self, feed, organization):
         strategy.BacktestingStrategy.__init__(self, feed)
         self.first_pass = True
@@ -40,36 +40,51 @@ class OrgStrat(strategy.BacktestingStrategy):
     def onBars(self, bars):
         if (self.first_pass == False): return
         weights = self.organization.get_weights()
-        print self.organization.weights
+
         for instr in weights:
             price = bars[instr].getClose()
             quantity = int(1000000 * weights[instr] / price)
             self.marketOrder(instr, quantity)
         self.first_pass = False
 
-def main1(plot):
-    al1 = Analyst('Ivy Kang')
-    al1.assign_weight('bk', 0.473)
-    al1.assign_weight('cmg', 0.215)
-    al1.assign_weight('aapl', 0.180)
-    instruments = []
-    for key in al1.weights:
-        instruments.append(key)
+class OrgStrat(strategy.BacktestingStrategy):
+    def __init__(self, feed, organization, update = "geometric"):
+        strategy.BacktestingStrategy.__init__(self, feed)
+        self.first_pass = True
+        self.organization = organization
+        self.setUseAdjustedValues(True)
+        self.update = update
+        self.first_pass = True
 
-    # Download the bars.
-    feed = yahoofinance.build_feed(instruments, 2014, 2015, ".instr_data")
+    def onBars(self, bars):
+        if first_pass:
+            return
+        weights = self.organization.get_weights()
+        if self.update == "geometric":
+            self.geometric_update()
+        broker = self.getBroker()
 
-    strat = HoldStrat(feed, instruments, al1)
-    sharpeRatioAnalyzer = sharpe.SharpeRatio()
-    strat.attachAnalyzer(sharpeRatioAnalyzer)
+        for instr in weights:
+            price = bars[instr].getClose()
+            notion = int(1000000 * weights[instr] / price)
+            current_holdings = broker.getShares(instr)
 
-    if plot:
-        plt = plotter.StrategyPlotter(strat, True, False, True)
+            order = notion - current_holdings
+            self.marketOrder(instr, order)
 
-    strat.run()
+    def geometric_update(self, bar):
+        """Updates confidence in each analyst based on performance at the last epoch """
+        # learning factor
+        gamma = 0.5
 
-    if plot:
-        plt.plot()
+        for analyst in self.organization.analysts:
+            # evalute analyst performance in last epoch
+            print 1
+            # adjust confidence in analyst
+
+def eval_analyst_performance(analyst, bar, bar):
+    """Evaluates analyst's performance in a given interval"""
+
 
 def main(plot):
     al1 = Analyst('Ivy Kang')
@@ -90,7 +105,7 @@ def main(plot):
     # Download the bars.
     feed = yahoofinance.build_feed(org.get_weights().keys(), 2014, 2015, ".instr_data")
 
-    strat = OrgStrat(feed, org)
+    strat = HoldStratA(feed, al1)
     sharpeRatioAnalyzer = sharpe.SharpeRatio()
     strat.attachAnalyzer(sharpeRatioAnalyzer)
 
@@ -101,23 +116,6 @@ def main(plot):
 
     if plot:
         plt.plot()
-
-class Epoch(object):
-    def __init__(self, start_time):
-        self.start_time = 0
-
-def main0():
-    """Tests functionality of classes"""
-    instruments = ['cmg', 'aapl', 'orcl', 'bk']
-    feed = yahoofinance.build_feed(instruments, 2011, 2012, "instr_data")
-    al1 = Analyst('Ivy Kang')
-    al1.assign_weight('cmg', 0.673)
-    al1.assign_weight('aapl', 0.215)
-
-    al2 = Analyst('Charlie Brown')
-    al2.assign_weight('cmg', 0.420)
-    al2.assign_weight('orcl', 0.130)
-    al2.assign_weight('bk', 0.32)
 
 if __name__ == "__main__":
     main(True)
