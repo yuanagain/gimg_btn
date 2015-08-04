@@ -5,7 +5,7 @@ from pyalgotrade.barfeed import yahoofeed
 from pyalgotrade.tools import yahoofinance
 from time import gmtime, strftime
 
-from weights import Analyst, Organization
+from players import Analyst, Organization
 
 from pyalgotrade import strategy
 from pyalgotrade import plotter
@@ -19,25 +19,35 @@ class HoldStrat(strategy.BacktestingStrategy):
         self.instruments = instruments
         self.first_pass = True
         self.analyst = analyst
+        self.setUseAdjustedValues(True)
 
     def onBars(self, bars):
         if (self.first_pass == False): return
         weights = self.analyst.weights
         for instr in self.instruments:
             price = bars[instr].getClose()
-            quantity = 1000000 * weights[instr] / price
+            quantity = int(1000000 * weights[instr] / price)
             self.marketOrder(instr, quantity)
         self.first_pass = False
-        # shares = self.getBroker().getShares(self.__instrument)
-        # price = bars[self.__instrument].getClose()
-        # notional = shares * price
 
-        # if price > vwap * (1 + self.__threshold) and notional < 1000000:
-        #     self.marketOrder(self.__instrument, 100)
-        # elif price < vwap * (1 - self.__threshold) and notional > 0:
-        #     self.marketOrder(self.__instrument, -100)
+class OrgStrat(strategy.BacktestingStrategy):
+    def __init__(self, feed, organization):
+        strategy.BacktestingStrategy.__init__(self, feed)
+        self.first_pass = True
+        self.organization = organization
+        self.setUseAdjustedValues(True)
 
-def main(plot):
+    def onBars(self, bars):
+        if (self.first_pass == False): return
+        weights = self.organization.get_weights()
+        print self.organization.weights
+        for instr in weights:
+            price = bars[instr].getClose()
+            quantity = int(1000000 * weights[instr] / price)
+            self.marketOrder(instr, quantity)
+        self.first_pass = False
+
+def main1(plot):
     al1 = Analyst('Ivy Kang')
     al1.assign_weight('bk', 0.473)
     al1.assign_weight('cmg', 0.215)
@@ -57,18 +67,46 @@ def main(plot):
         plt = plotter.StrategyPlotter(strat, True, False, True)
 
     strat.run()
-    al1.status()
 
     if plot:
         plt.plot()
 
+def main(plot):
+    al1 = Analyst('Ivy Kang')
+    al1.assign_weight('cmg', 0.673)
+    al1.assign_weight('aapl', 0.215)
 
+    al2 = Analyst('Charlie Brown')
+    al2.assign_weight('cmg', 0.420)
+    al2.assign_weight('orcl', 0.130)
+    al2.assign_weight('bk', 0.32)
+    al2.assign_weight('bk', 0.40)
+    al2.assign_weight('cmg', 0.30)
+
+    org = Organization()
+    org.add_analyst(al1)
+    org.add_analyst(al2)
+
+    # Download the bars.
+    feed = yahoofinance.build_feed(org.get_weights().keys(), 2014, 2015, ".instr_data")
+
+    strat = OrgStrat(feed, org)
+    sharpeRatioAnalyzer = sharpe.SharpeRatio()
+    strat.attachAnalyzer(sharpeRatioAnalyzer)
+
+    if plot:
+        plt = plotter.StrategyPlotter(strat, True, False, True)
+
+    strat.run()
+
+    if plot:
+        plt.plot()
 
 class Epoch(object):
     def __init__(self, start_time):
         self.start_time = 0
 
-def main2():
+def main0():
     """Tests functionality of classes"""
     instruments = ['cmg', 'aapl', 'orcl', 'bk']
     feed = yahoofinance.build_feed(instruments, 2011, 2012, "instr_data")
