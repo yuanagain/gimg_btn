@@ -28,4 +28,4 @@ print "EVIL => MONEY"
 time.sleep(.3)
 print "BLING BLING BLING"
 os.system("python tutorialPlotter.py")
-os.system("clear")
+##os.system("clear")
