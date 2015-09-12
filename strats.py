@@ -90,7 +90,9 @@ class OrgStrat(strategy.BacktestingStrategy):
 
 
     def geometric_update(self):
-        """Updates confidence in each analyst based on performance at the last epoch """
+        """
+        Updates confidence in each analyst based on performance at the last epoch 
+        """
         # learning factor
         gamma = 0.5
         delta = timedelta(days = -1)
